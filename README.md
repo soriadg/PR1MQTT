@@ -1,72 +1,72 @@
-# Practica 1 - MQTT con BBB y ESP32
+# Práctica 1 - MQTT con BeagleBone Black y ESP32
 
-Esta es la guia de lo que hice para montar el broker en la BeagleBone y conectar la ESP32.
+Este documento detalla el procedimiento que seguimos para configurar el broker Mosquitto en la BeagleBone Black y realizar la comunicación con una ESP32 como publicador.
 
-### 1. Instalar Mosquitto en la BeagleBone
-Primero hay que actualizar y bajar el broker:
+### 1. Instalación de Mosquitto en la BeagleBone Black
+En primer lugar, procedimos a actualizar los repositorios e instalar el broker y los clientes de Mosquitto:
 
 ```bash
 sudo apt update && sudo apt install mosquitto mosquitto-clients -y
 ```
 
-Para ver si quedo bien instalado, checar el status:
+Para verificar que la instalación fue exitosa, revisamos el estado del servicio:
 
 ```bash
 sudo systemctl status mosquitto
 ```
 
-Deberia decir "active (running)" en las letras verdes.
+Confirmamos que el estado aparece como "active (running)".
 
 
-### 2. Configurar el acceso
-Por default no deja entrar de fuera, asi que cree el archivo de configuracion:
+### 2. Configuración de acceso remoto
+Dado que por defecto el broker solo permite conexiones locales, creamos un archivo de configuración para habilitar el acceso desde otros dispositivos de la red:
 
 ```bash
 sudo nano /etc/mosquitto/conf.d/default.conf
 ```
 
-Le pegue esto:
+Se añadió el siguiente contenido:
 
 ```text
 listener 1883
 allow_anonymous true
 ```
 
-Y reinicie para que agarre los cambios:
+Posteriormente, reiniciamos el servicio para aplicar los cambios realizados:
 
 ```bash
 sudo systemctl restart mosquitto
 ```
 
 
-### 3. Probar que funcione el broker
-Abri dos terminales para ver si pasaban los mensajes entre ellas.
+### 3. Pruebas de funcionamiento del broker
+Para validar que el broker procesa correctamente los mensajes, realizamos una prueba utilizando dos terminales SSH.
 
-En la **Terminal 1** me quede escuchando el topico "test":
+En la **Terminal 1**, nos suscribimos al tópico "test":
 
 ```bash
 mosquitto_sub -h localhost -t "test" -v
 ```
 
-En la **Terminal 2** mande el mensaje:
+En la **Terminal 2**, enviamos un mensaje de prueba:
 
 ```bash
 mosquitto_pub -h localhost -t "test" -m "Hola desde BBB"
 ```
 
-Si en la Terminal 1 sale `test Hola desde BBB`, es que el broker ya esta funcionando bien.
+Al recibir el mensaje `test Hola desde BBB` en la primera terminal, confirmamos el correcto funcionamiento del broker.
 
 
-### 4. Configurar la ESP32
-En el codigo de `main.cpp` dentro de PlatformIO, puse mis datos de red:
+### 4. Configuración y despliegue en la ESP32
+En el entorno de PlatformIO, configuramos el archivo `main.cpp` con las credenciales de red y la dirección IP de la BeagleBone Black:
 
 ```cpp
-const char* ssid = "mi_red";
-const char* password = "mi_password";
-const char* mqtt_server = "192.168.1.xxx"; // aqui va la IP de la BBB
+const char* ssid = "nombre_de_red";
+const char* password = "contraseña_de_red";
+const char* mqtt_server = "192.168.1.xxx"; // IP asignada a la BBB
 ```
 
-Compile y subi el codigo. En el monitor serie deberia salir:
+Tras compilar y subir el código, verificamos en el monitor serie la conexión exitosa:
 
 ```text
 Conectando a WiFi...
@@ -75,8 +75,8 @@ Conectando al broker MQTT... conectado!
 ```
 
 
-### 5. Ver los datos reales
-Para ver lo que esta mandando la ESP32 desde la BeagleBone use:
+### 5. Recepción de datos en tiempo real
+Finalmente, desde la BeagleBone Black, nos suscribimos al tópico donde publica la ESP32 para visualizar los datos recibidos:
 
 ```bash
 mosquitto_sub -h localhost -t "esp32/datos" -v
@@ -90,6 +90,6 @@ esp32/datos Temperatura: 27 C
 ```
 
 
-### Notas finales:
-- Si no conecta, hay que checar que la BBB y la ESP32 esten conectadas al mismo modem.
-- Las capturas de pantalla de todo el proceso estan en la carpeta `/evidencias`.
+### Notas adicionales
+- Es fundamental que tanto la BeagleBone Black como la ESP32 se encuentren conectadas a la misma red local para asegurar la comunicación.
+- Las capturas de pantalla que evidencian cada etapa del proceso se encuentran almacenadas en la carpeta `/evidencias`.
